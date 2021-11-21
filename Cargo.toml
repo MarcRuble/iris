@@ -5,7 +5,7 @@ authors = ["Matt Taylor"]
 edition = "2018"
 
 [features]
-default = []
+default = ["progressive"]
 progressive = ["minifb"]
 
 [profile.dev]
@@ -19,6 +19,5 @@ codegen-units = 1
 [dependencies]
 num_cpus = "1.13.0"
 enum_dispatch = "0.3.5"
-openexr = "0.7.1"
 sobol_burley = "0.1.0"
 minifb = { version = "0.19.2", optional = true }

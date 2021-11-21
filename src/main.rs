@@ -4,8 +4,11 @@ extern crate sobol_burley as sobol;
 
 use std::{
     collections::BinaryHeap,
-    sync::{Arc, Mutex, RwLock},
-    time::Instant,
+    sync::{Arc, Mutex, RwLock,
+        atomic::{Ordering, AtomicUsize, AtomicBool}
+    },
+    time::{Instant, Duration},
+    io::Write
 };
 
 mod bsdf;
@@ -24,8 +27,8 @@ use camera::Camera;
 use scene::Scene;
 use tile::TileData;
 
-const WIDTH: usize = 512;
-const HEIGHT: usize = 512;
+const WIDTH: usize = 1024;
+const HEIGHT: usize = 1024;
 const TOTAL_SPP: usize = 100;
 
 type CurrentIntegrator = integrator::hwss_naive::HwssNaive;
@@ -41,6 +44,7 @@ pub struct Render {
 }
 
 fn main() {
+    
     let render = Arc::new(Render {
         width: WIDTH,
         height: HEIGHT,
@@ -53,7 +57,7 @@ fn main() {
             (WIDTH as f32) / (HEIGHT as f32),
         ),
     });
-
+    
     let tile_priorities = Arc::new(Mutex::new(
         // TODO: Make this nice
         (0..)
@@ -62,12 +66,12 @@ fn main() {
             .map(|t| t.unwrap())
             .collect::<BinaryHeap<TileData>>(),
     ));
-
+    
     let num_threads = std::env::var("NTHREADS")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or_else(num_cpus::get);
-
+    
     do_render(render, tile_priorities, num_threads);
 }
 
@@ -81,6 +85,10 @@ fn do_render(
         "Starting render, {}x{}@{}spp...",
         render.width, render.height, render.spp
     );
+
+    println!("Cancelling render because non-progressive rendering requires OpenEXR which does not work for me");
+
+    /*
 
     let start = Instant::now();
 
@@ -131,6 +139,8 @@ fn do_render(
     let mut fb = FrameBuffer::new(render.width as u32, render.height as u32);
     fb.insert_channels(&["R", "G", "B"], &pixels);
     output_file.write_pixels(&fb).unwrap();
+
+    */
 }
 
 #[cfg(feature = "progressive")]
@@ -152,7 +162,7 @@ fn do_render(
     )
     .expect("failed to create window");
 
-    let samples_taken = AtomicUsize::new(0);
+    static SAMPLES_TAKEN: AtomicUsize = AtomicUsize::new(0);
     static DONE: AtomicBool = AtomicBool::new(false);
 
     println!("Starting render...");
@@ -169,7 +179,7 @@ fn do_render(
                     let samples_before = tile.remaining_samples;
                     let tile = tile.render(&render);
                     let samples_after = tile.remaining_samples;
-                    samples_taken.fetch_add(
+                    SAMPLES_TAKEN.fetch_add(
                         (samples_before - samples_after) * tile.width * tile.height,
                         Ordering::Relaxed,
                     );
@@ -201,7 +211,7 @@ fn do_render(
     while window.is_open() && !window.is_key_down(Key::Escape) {
         if !DONE.load(Ordering::Relaxed) {
             let progress =
-                samples_taken.load(Ordering::Relaxed) as f32 / (render.spp * WIDTH * HEIGHT) as f32;
+            SAMPLES_TAKEN.load(Ordering::Relaxed) as f32 / (render.spp * WIDTH * HEIGHT) as f32;
             print!("Progress: {:>5.2}%\r", 100.0 * progress);
             std::io::stdout().flush().unwrap();
         }
@@ -223,7 +233,37 @@ fn do_render(
 
         prev_time = Instant::now();
 
-        let buffer = render.buffer.read().unwrap();
+        //let buffer = render.buffer.read().unwrap();
+        let lock_result: 
+            std::sync::LockResult<std::sync::RwLockReadGuard<'_, std::vec::Vec<(f32, f32, f32)>>>
+            = render.buffer.read();
+        let buffer_guarded_vec = lock_result.ok().unwrap();
+        let buffer_float = &*buffer_guarded_vec;
+
+        // convert the f32 RGB values to u32 format 0RGB
+        //let mut buffer: [u32; WIDTH*HEIGHT] = [0; WIDTH*HEIGHT]; stack overflow for 512x512
+        let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
+                let index = y * WIDTH + x;
+                let pixel = buffer_float[index];
+
+                let mut result: u32 = 0;
+                let r: f32 = pixel.0 * 255.0;
+                let g: f32 = pixel.1 * 255.0;
+                let b: f32 = pixel.2 * 255.0;
+                //println!("read pixel ({}, {}, {})", r, g, b);
+
+                result += r as u32;
+                result = result << 8;
+                result += g as u32;
+                result = result << 8;
+                result += b as u32;
+
+                buffer[index] = result;
+            } 
+        }
+
         window
             .update_with_buffer(&buffer, render.width, render.height)
             .expect("failed to update window buffer with pixel data");
