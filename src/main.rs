@@ -23,15 +23,19 @@ mod spectrum;
 mod tile;
 mod types;
 
+use std::env;
 use camera::Camera;
 use scene::Scene;
 use tile::TileData;
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;
-const TOTAL_SPP: usize = 100;
+const TOTAL_SPP: usize = 4;
 
+#[cfg(feature = "hwss")]
 type CurrentIntegrator = integrator::hwss_naive::HwssNaive;
+#[cfg(not(feature = "hwss"))]
+type CurrentIntegrator = integrator::swss_naive::SwssNaive;
 
 pub struct Render {
     pub width: usize,
@@ -44,11 +48,18 @@ pub struct Render {
 }
 
 fn main() {
-    
+
+    let mut total_spp = TOTAL_SPP;
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 {
+        total_spp = (&args[1]).parse::<usize>().unwrap();
+    }
+
     let render = Arc::new(Render {
         width: WIDTH,
         height: HEIGHT,
-        spp: TOTAL_SPP,
+        spp: total_spp,
         integrator: CurrentIntegrator::default(),
         scene: scene::Scene::dummy(),
         buffer: RwLock::new(vec![(0.0, 0.0, 0.0); WIDTH * HEIGHT]),
