@@ -4,7 +4,7 @@ use crate::{
     bsdf::{Bsdf, FresnelBsdf, LambertianBsdf, MicrofacetBsdf, SampleableBsdf, SpecularBsdf},
     math::{self, PdfSet, Point3, Ray, Shading, Vec3},
     sampling::{self, mis, Sampler},
-    shape::{Geometry, Intersection, Primitive, Shape, Sphere},
+    shape::{Geometry, Intersection, Primitive, Shape, Sphere, Triangle},
     spectrum::{
         upsample::UpsampleTable,
         ConstantSpectrum,
@@ -40,17 +40,31 @@ impl Scene {
             //ConstantSpectrum::new(0.25),
         //);
 
-        scene.add_emissive_material(
+        // add lights / emissive primitives
+
+        /*scene.add_emissive_material(
             Sphere::new(Point3::new(0.0, 2.3, 3.0), 1.0),
             LambertianBsdf::new(ConstantSpectrum::new(0.5)),
             ConstantSpectrum::new(3.0),
+        );*/
+        scene.add_emissive_material(
+            Triangle::new(
+                Point3::new(0.0, 2.3, 3.0),
+                Point3::new(0.0, 0.0, 3.0),
+                Point3::new(1.0, 1.0, 3.0)
+            ),
+            LambertianBsdf::new(ConstantSpectrum::new(0.5)),
+            ConstantSpectrum::new(3.0),
         );
+
+        // add geometry
+
         //scene.add_material(
             //Sphere::new(Point3::new(0.0, 1.5, 7.0), 3.0),
             ////LambertianBsdf::new(upsample_table.get_spectrum([0.8, 0.1, 0.1])),
             //LambertianBsdf::new(ConstantSpectrum::new(0.5)),
         //);
-        scene.add_material(
+        /*scene.add_material(
             Sphere::new(Point3::new(0.0, -0.2, 3.0), 1.0),
             //FresnelBsdf::new(
                 //ConstantSpectrum::new(1.0),
@@ -59,11 +73,27 @@ impl Scene {
                 //0.00459,
             //),
             LambertianBsdf::new(ConstantSpectrum::new(0.5)),
-        );
+        );*/
+
+        // floor is a very large sphere far away
         scene.add_material(
             Sphere::new(Point3::new(0.0, -101.5, 2.0), 100.0),
-            LambertianBsdf::new(ConstantSpectrum::new(0.8)),
+            LambertianBsdf::new(ConstantSpectrum::new(2.0)),
         );
+
+        /*scene.add_material(
+            Triangle::new(
+                Point3::new(0.0, 2.3, 3.0),
+                Point3::new(0.0, 0.0, 3.0),
+                Point3::new(1.0, 1.0, 3.0)
+            ),
+            LambertianBsdf::new(ConstantSpectrum::new(2.0)),
+        );*/
+
+        /*scene.add_material(
+            Sphere::new(Point3::new(0.0, 111.5, 2.0), 100.0),
+            LambertianBsdf::new(ConstantSpectrum::new(2.0)),
+        );*/
 
         scene
     }

@@ -23,6 +23,17 @@ impl Wavelength {
         }
     }
 
+    pub fn new_sampled(sampler: &mut Sampler) -> Self {
+        Self {
+            inner: Vec4::new(
+                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
+                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
+                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
+                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM
+            )
+        }
+    }
+
     pub fn sample(sampler: &mut Sampler) -> Self {
         Self::new(sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM)
     }

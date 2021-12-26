@@ -11,6 +11,9 @@ use crate::{
 mod sphere;
 pub use sphere::Sphere;
 
+mod triangle;
+pub use triangle::Triangle;
+
 #[derive(Debug)]
 pub struct Intersection {
     pub point: Point3,
@@ -50,6 +53,7 @@ pub trait Shape {
 #[derive(Debug, Clone)]
 pub enum Geometry {
     Sphere,
+    Triangle
 }
 
 #[derive(Debug, Clone)]
