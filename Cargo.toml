@@ -8,6 +8,7 @@ edition = "2018"
 default = ["progressive"]
 progressive = ["minifb"]
 hwss = []
+nee = []
 
 [profile.dev]
 opt-level = 1
