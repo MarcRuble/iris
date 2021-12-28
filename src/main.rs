@@ -260,9 +260,9 @@ fn do_render(
                 let pixel = buffer_float[index];
 
                 let mut result: u32 = 0;
-                let r: f32 = pixel.0 * 255.0;
-                let g: f32 = pixel.1 * 255.0;
-                let b: f32 = pixel.2 * 255.0;
+                let r: f32 = pixel.0.min(1.0) * 255.0;
+                let g: f32 = pixel.1.min(1.0) * 255.0;
+                let b: f32 = pixel.2.min(1.0) * 255.0;
                 //println!("read pixel ({}, {}, {})", r, g, b);
 
                 result += r as u32;
