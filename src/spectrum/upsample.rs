@@ -8,7 +8,7 @@ pub struct UpsampleTable {
     resolution: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct UpsampledSpectrum {
     coefficients: [f32; 3],
 }
@@ -21,6 +21,12 @@ impl SampleableSpectrum for UpsampledSpectrum {
             .mul_add(lambda, self.coefficients[2]);
         let y = 1.0 / x.mul_add(x, 1.0).sqrt();
         (0.5 * x).mul_add(y, 0.5)
+    }
+}
+
+impl UpsampledSpectrum {
+    pub fn get_coefficients(&self) -> [f32; 3] {
+        return self.coefficients;
     }
 }
 

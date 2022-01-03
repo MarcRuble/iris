@@ -12,7 +12,9 @@ pub struct Triangle {
     v2: Point3,
     v3: Point3,
     center: Point3,
-    normal: Vec3
+    normal: Vec3,
+    dpdu: Vec3,
+    dpdv: Vec3,
 }
 
 impl Triangle {
@@ -24,7 +26,25 @@ impl Triangle {
         // compute surface normal
         let normal = (v2 - v1).cross(v3 - v1).normalize();
 
-        Self { v1, v2, v3, center, normal }
+        // setup default uv values
+        let uv: [Point3; 3] = [
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0, 0.0),
+        ];
+
+        // compute deltas for partial derivatives
+        let duv02 = uv[0] - uv[2];
+        let duv12 = uv[1] - uv[2];
+        let dp02 = v1 - v3;
+        let dp12 = v2 - v3;
+
+        // no need to check for singular matrix because no user input of UVs
+        // compute partial derivatives
+        let inormal = (v3 - v1).cross(v2 - v1).normalize();
+        let (dpdu, dpdv) = inormal.coordinate_system_from_unit();
+
+        Self { v1, v2, v3, center, normal, dpdu, dpdv }
     }
 
     fn local_to_world(&self, vec: Vec3<Local>) -> Vec3 {
@@ -75,10 +95,8 @@ impl Shape for Triangle {
 
         let hit_point = ray.point_at(distance);
         let hit_normal = self.normal;
-        // TODO: properly calculate those two with derivatives:
-        // https://pbr-book.org/3ed-2018/Shapes/Triangle_Meshes#fragment-Computedeltasfortrianglepartialderivatives-0
-        let tangeant = Vec3::splat(0.5);//Vec3::new(0.0, 1.0, 0.0).cross(hit_normal).normalize();
-        let bitangeant = Vec3::splat(0.5);//hit_normal.cross(tangeant);
+        let tangeant = self.dpdu;
+        let bitangeant = self.dpdv;
         let back_face = hit_normal.dot(ray.d()) >= 0.0;
 
         Some((
