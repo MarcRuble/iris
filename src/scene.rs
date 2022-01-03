@@ -104,6 +104,7 @@ impl Scene {
                     ),
                     //LambertianBsdf::new(ConstantSpectrum::new(2.0)),
                     LambertianBsdf::new(blue),
+                    //SpecularBsdf::new(blue),
                     //ConstantSpectrum::new(1.0),
                 );
             } else {
@@ -122,8 +123,8 @@ impl Scene {
         }
 
         // add the ceiling light as 2 triangles
-        let light_size = 0.2;
-        let light_emission = 50.0;
+        let light_size = 0.25;
+        let light_emission = 120.0;
 
         scene.add_emissive_material(
             Triangle::new(
@@ -169,7 +170,9 @@ impl Scene {
         // add a sphere
         scene.add_material(
             Sphere::new(Point3::new(0.4, 0.0, 1.0), 0.25),
-            LambertianBsdf::new(gray),
+            //LambertianBsdf::new(gray),
+            //SpecularBsdf::new(ConstantSpectrum::new(2.0)),
+            FresnelBsdf::new(gray, gray, 1.55, 0.1),
         );
 
         scene
