@@ -27,6 +27,10 @@ use std::env;
 use camera::Camera;
 use scene::Scene;
 use tile::TileData;
+use sampling::Sampler;
+use spectrum::Wavelength;
+use math::Ray;
+use integrator::Integrator;
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 1024;
@@ -68,6 +72,20 @@ fn main() {
             (WIDTH as f32) / (HEIGHT as f32),
         ),
     });
+
+    // test a single ray
+    /*let mut sampler = Sampler::new(500, 500, 0, 123);
+    let hero_wavelength = Wavelength::sample(&mut sampler);
+    let ray = Ray::new(
+        math::Point3::new(0.0, 0.0, 0.0),
+        math::Vec3::new(1.0, 0.0, 1.0),
+    );
+    let color = render
+        .integrator
+        .radiance(&render.scene, ray, hero_wavelength, &mut sampler)
+        .to_xyz(hero_wavelength).to_rgb_hdr();
+    println!("value is {}, {}, {}", color.0, color.1, color.2);
+    return;*/
     
     let tile_priorities = Arc::new(Mutex::new(
         // TODO: Make this nice

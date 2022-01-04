@@ -37,6 +37,7 @@ impl Scene {
         let blue = upsample_table.get_spectrum([0.0, 0.1, 1.0]);
         let gray = upsample_table.get_spectrum([0.8, 0.8, 0.8]);
         let black = upsample_table.get_spectrum([0.1, 0.1, 0.1]);
+        let constant = ConstantSpectrum::new(1.0);
 
         // build the box
         // declare triangle vertices
@@ -121,10 +122,36 @@ impl Scene {
             }
             i += 3;
         }
+        /*scene.add_material(
+            Sphere::new(Point3::new(0.0, -101.0, 1.0), 100.0),
+            LambertianBsdf::new(constant),
+        );
+        scene.add_material(
+            Sphere::new(Point3::new(0.0, 101.0, 1.0), 100.0),
+            LambertianBsdf::new(constant),
+        );
+        scene.add_material(
+            Sphere::new(Point3::new(0.0, 0.0, 102.0), 100.0),
+            LambertianBsdf::new(constant),
+        );
+        scene.add_material(
+            Sphere::new(Point3::new(-101.0, 0.0, 1.0), 100.0),
+            LambertianBsdf::new(constant),
+        );
+        scene.add_material(
+            Sphere::new(Point3::new(101.0, 0.0, 1.0), 100.0),
+            LambertianBsdf::new(constant),
+        );*/
 
         // add the ceiling light as 2 triangles
         let light_size = 0.25;
         let light_emission = 120.0;
+
+        /*scene.add_emissive_material(
+            Sphere::new(Point3::new(0.0, 0.8, 1.0), 0.15),
+            LambertianBsdf::new(constant),
+            ConstantSpectrum::new(light_emission),
+        );*/
 
         scene.add_emissive_material(
             Triangle::new(
@@ -170,9 +197,9 @@ impl Scene {
         // add a sphere
         scene.add_material(
             Sphere::new(Point3::new(0.4, 0.0, 1.0), 0.25),
-            //LambertianBsdf::new(gray),
+            LambertianBsdf::new(gray),
             //SpecularBsdf::new(ConstantSpectrum::new(2.0)),
-            FresnelBsdf::new(gray, gray, 1.55, 0.1),
+            //FresnelBsdf::new(gray, gray, 1.55, 0.1),
         );
 
         scene
@@ -184,19 +211,19 @@ impl Scene {
         let upsample_table = UpsampleTable::load();
 
         //Light oven
-        //scene.add_emissive_material(
-            //Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.0),
-            //LambertianBsdf::new(ConstantSpectrum::new(0.50)),
-            //ConstantSpectrum::new(0.25),
-        //);
+        scene.add_emissive_material(
+            Sphere::new(Point3::new(0.0, 0.0, 2.0), 0.5),
+            LambertianBsdf::new(ConstantSpectrum::new(0.50)),
+            ConstantSpectrum::new(1.0),
+        );
 
         // add lights / emissive primitives
 
-        scene.add_material(
+        /*scene.add_material(
             Sphere::new(Point3::new(0.0, 0.0, 1.0), 0.25),
             LambertianBsdf::new(ConstantSpectrum::new(2.0)),
             //ConstantSpectrum::new(10.0),
-        );
+        );*/
         /*scene.add_emissive_material(
             Triangle::new(
                 Point3::new(0.0, 2.3, 3.0),
@@ -226,14 +253,14 @@ impl Scene {
         );*/
 
         // floor is a very large sphere far away
-        /*scene.add_material(
+        scene.add_material(
             Sphere::new(Point3::new(0.0, -101.0, 1.0), 100.0),
             LambertianBsdf::new(ConstantSpectrum::new(2.0)),
         );
         scene.add_material(
             Sphere::new(Point3::new(0.0, 101.0, 1.0), 100.0),
             LambertianBsdf::new(ConstantSpectrum::new(2.0)),
-        );*/
+        );
         /*scene.add_material(
             Sphere::new(Point3::new(-101.0, 0.0, 1.0), 100.0),
             LambertianBsdf::new(ConstantSpectrum::new(2.0)),
@@ -279,7 +306,7 @@ impl Scene {
             LambertianBsdf::new(ConstantSpectrum::new(2.0)),
         );*/
 
-        scene.add_material(
+        /*scene.add_material(
             Triangle::new(
                 Point3::new(0.6, 0.0, 1.0),
                 Point3::new(1.0, 0.0, 1.0),
@@ -304,7 +331,7 @@ impl Scene {
             ),
             LambertianBsdf::new(ConstantSpectrum::new(0.5)),
             ConstantSpectrum::new(10.0)
-        );
+        );*/
 
         scene
     }

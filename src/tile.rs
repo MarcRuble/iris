@@ -124,7 +124,7 @@ impl TileData {
     }
 }
 
-fn get_pixel_color(
+pub fn get_pixel_color(
     x_abs: usize,
     y_abs: usize,
     samples_this_iter: usize,
