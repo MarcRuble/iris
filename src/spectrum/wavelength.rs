@@ -18,24 +18,29 @@ impl Wavelength {
         let z = rotate_n(hero, 2);
         let w = rotate_n(hero, 3);
 
+        //println!("sampled wavelength set: hero={}, y={}, z={}, w={}", hero, y, z, w);
+
         Self {
             inner: Vec4::new(hero, y, z, w),
         }
     }
 
-    pub fn new_sampled(sampler: &mut Sampler) -> Self {
+    // Experiment for simplified method of Radziszewski et al. (2009)
+    /*pub fn new_sampled(sampler: &mut Sampler) -> Self {
         Self {
             inner: Vec4::new(
-                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
-                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
-                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM,
-                sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM
+                sampler.gen_range(LAMBDA_MIN_NM, LAMBDA_MAX_NM),
+                sampler.gen_range(LAMBDA_MIN_NM, LAMBDA_MAX_NM),
+                sampler.gen_range(LAMBDA_MIN_NM, LAMBDA_MAX_NM),
+                sampler.gen_range(LAMBDA_MIN_NM, LAMBDA_MAX_NM)
             )
         }
-    }
+    }*/
 
     pub fn sample(sampler: &mut Sampler) -> Self {
-        Self::new(sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM)
+        //Self::new(sampler.gen_golden_ratio() * LAMBDA_RANGE_NM + LAMBDA_MIN_NM)
+        Self::new(sampler.gen_range(LAMBDA_MIN_NM, LAMBDA_MAX_NM))
+        //Self::new_sampled(sampler)
     }
 
     pub fn pdf(self) -> f32 {

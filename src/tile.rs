@@ -145,7 +145,6 @@ pub fn get_pixel_color(
         let mut sampler = Sampler::new(x_abs, y_abs, i + samples_so_far, SEED);
 
         let hero_wavelength = Wavelength::sample(&mut sampler);
-        //let hero_wavelength = Wavelength::new_sampled(&mut sampler);
 
         let jitter_clip = Vec3::new(
             0.5 * sampler.gen_0_1() / render.width as f32,

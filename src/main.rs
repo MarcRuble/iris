@@ -37,9 +37,10 @@ const HEIGHT: usize = 1024;
 const TOTAL_SPP: usize = 4;
 
 //#[cfg(feature = "hwss")]
-type CurrentIntegrator = integrator::hwss_modified::HwssModified;
+type CurrentIntegrator = integrator::path_integrator::PathIntegrator;
 //#[cfg(not(feature = "hwss"))]
 //type CurrentIntegrator = integrator::swss_naive::SwssNaive;
+//type CurrentIntegrator = integrator::hwss_naive::HwssNaive;
 
 pub struct Render {
     pub width: usize,

@@ -1,6 +1,6 @@
 use std::{arch::x86_64::*, mem};
 
-use crate::{color::Xyz, spectrum::Wavelength, math::Vec4};
+use crate::{color::Xyz, spectrum::Wavelength, math::{Vec4, PdfSet}};
 
 #[derive(Copy, Clone)]
 pub struct SpectralSample {
@@ -111,6 +111,17 @@ impl std::ops::Mul<SpectralSample> for f32 {
     fn mul(self, other: SpectralSample) -> SpectralSample {
         SpectralSample {
             inner: self * other.inner,
+        }
+        .assert_invariants()
+    }
+}
+
+impl std::ops::Mul<SpectralSample> for PdfSet {
+    type Output = SpectralSample;
+
+    fn mul(self, other: SpectralSample) -> SpectralSample {
+        SpectralSample {
+            inner: self.inner * other.inner,
         }
         .assert_invariants()
     }
