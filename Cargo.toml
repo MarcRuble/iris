@@ -1,14 +1,12 @@
 [package]
 name = "iris"
 version = "0.1.0"
-authors = ["Matt Taylor"]
+authors = ["Original by Matt Taylor", "Modified by Marc Ruble"]
 edition = "2018"
 
 [features]
-default = ["progressive"]
-progressive = ["minifb"]
+default = []
 hwss = []
-nee = []
 
 [profile.dev]
 opt-level = 1
@@ -22,4 +20,5 @@ codegen-units = 1
 num_cpus = "1.13.0"
 enum_dispatch = "0.3.5"
 sobol_burley = "0.1.0"
-minifb = { version = "0.19.2", optional = true }
+minifb = "0.19.2"
+png = "0.17.2"

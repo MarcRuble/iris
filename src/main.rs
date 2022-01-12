@@ -55,10 +55,16 @@ pub struct Render {
 fn main() {
 
     let mut total_spp = TOTAL_SPP;
+    let mut output_file_name = String::from("");
 
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
         total_spp = (&args[1]).parse::<usize>().unwrap();
+    }
+    if args.len() > 2 {
+        output_file_name.push_str("results/");
+        output_file_name.push_str(&args[2]);
+        output_file_name.push_str(".png");
     }
 
     let render = Arc::new(Render {
@@ -73,20 +79,6 @@ fn main() {
             (WIDTH as f32) / (HEIGHT as f32),
         ),
     });
-
-    // test a single ray
-    /*let mut sampler = Sampler::new(500, 500, 0, 123);
-    let hero_wavelength = Wavelength::sample(&mut sampler);
-    let ray = Ray::new(
-        math::Point3::new(0.0, 0.0, 0.0),
-        math::Vec3::new(1.0, 0.0, 1.0),
-    );
-    let color = render
-        .integrator
-        .radiance(&render.scene, ray, hero_wavelength, &mut sampler)
-        .to_xyz(hero_wavelength).to_rgb_hdr();
-    println!("value is {}, {}, {}", color.0, color.1, color.2);
-    return;*/
     
     let tile_priorities = Arc::new(Mutex::new(
         // TODO: Make this nice
@@ -102,23 +94,24 @@ fn main() {
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or_else(num_cpus::get);
     
-    do_render(render, tile_priorities, num_threads);
+    if output_file_name.len() > 0 {
+        do_render_png(render, tile_priorities, num_threads, output_file_name);
+    }
+    else {
+        do_render_progressive(render, tile_priorities, num_threads);
+    }
 }
 
-#[cfg(not(feature = "progressive"))]
-fn do_render(
+fn do_render_png(
     render: Arc<Render>,
     tile_priorities: Arc<Mutex<BinaryHeap<TileData>>>,
     num_threads: usize,
+    output_file_name: String
 ) {
     println!(
-        "Starting render, {}x{}@{}spp...",
+        "Starting render, {}x{}@{}spp to save as PNG file",
         render.width, render.height, render.spp
     );
-
-    println!("Cancelling render because non-progressive rendering requires OpenEXR which does not work for me");
-
-    /*
 
     let start = Instant::now();
 
@@ -151,30 +144,63 @@ fn do_render(
         ((render.spp * WIDTH * HEIGHT) as f32) / (1_000_000.0 * elapsed),
     );
 
-    // Output EXR file
-    use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
+    // read finished render buffer
+    let lock_result: 
+            std::sync::LockResult<std::sync::RwLockReadGuard<'_, std::vec::Vec<(f32, f32, f32)>>>
+            = render.buffer.read();
+    let buffer_guarded_vec = lock_result.ok().unwrap();
+    let buffer_float = &*buffer_guarded_vec;
 
-    let mut file = std::fs::File::create("out.exr").unwrap();
-    let mut output_file = ScanlineOutputFile::new(
-        &mut file,
-        Header::new()
-            .set_resolution(render.width as u32, render.height as u32)
-            .add_channel("R", PixelType::FLOAT)
-            .add_channel("G", PixelType::FLOAT)
-            .add_channel("B", PixelType::FLOAT),
-    )
-    .unwrap();
+    // choose file to save image to
+    use std::fs::OpenOptions;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(output_file_name)
+        .unwrap();
+    let ref mut w = std::io::BufWriter::new(file);
 
-    let pixels = render.buffer.read().unwrap();
-    let mut fb = FrameBuffer::new(render.width as u32, render.height as u32);
-    fb.insert_channels(&["R", "G", "B"], &pixels);
-    output_file.write_pixels(&fb).unwrap();
+    // configure the encoder
+    let mut encoder = png::Encoder::new(w, WIDTH as u32, HEIGHT as u32);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.set_trns(vec!(0xFFu8, 0xFFu8, 0xFFu8, 0xFFu8));
+    encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455));
+    encoder.set_source_gamma(png::ScaledFloat::new(1.0 / 2.2));
+    let source_chromaticities = png::SourceChromaticities::new(
+        (0.31270, 0.32900),
+        (0.64000, 0.33000),
+        (0.30000, 0.60000),
+        (0.15000, 0.06000)
+    );
+    encoder.set_source_chromaticities(source_chromaticities);
+    let mut writer = encoder.write_header().unwrap();
 
-    */
+    // convert the f32 (R,G,B) values to u8 format in order [R,G,B,A]
+    let mut buffer: Vec<u8> = vec![0; WIDTH * HEIGHT * 4];
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let index = y * WIDTH + x;
+            let pixel = buffer_float[index];
+
+            // convert from [0,1] to [0,255]
+            let r: f32 = pixel.0.max(0.0).min(1.0) * 255.0;
+            let g: f32 = pixel.1.max(0.0).min(1.0) * 255.0;
+            let b: f32 = pixel.2.max(0.0).min(1.0) * 255.0;
+
+            // convert to u8
+            buffer[4*index + 0] = r as u8;
+            buffer[4*index + 1] = g as u8;
+            buffer[4*index + 2] = b as u8;
+            buffer[4*index + 3] = 255;
+        } 
+    }
+
+    // write to file
+    writer.write_image_data(&buffer);
 }
 
-#[cfg(feature = "progressive")]
-fn do_render(
+fn do_render_progressive(
     render: Arc<Render>,
     tile_priorities: Arc<Mutex<BinaryHeap<TileData>>>,
     num_threads: usize,
@@ -195,7 +221,10 @@ fn do_render(
     static SAMPLES_TAKEN: AtomicUsize = AtomicUsize::new(0);
     static DONE: AtomicBool = AtomicBool::new(false);
 
-    println!("Starting render...");
+    println!(
+        "Starting render, {}x{}@{}spp in progressive mode",
+        render.width, render.height, render.spp
+    );
 
     let start = Instant::now();
 

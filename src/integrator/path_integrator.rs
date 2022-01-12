@@ -134,26 +134,20 @@ impl PathIntegrator {
     fn get_mis_weight(&self, path_pdfs: PdfSet) -> PdfSet {
         #[cfg(feature = "hwss")]
         {
-            // for hero wavelength sampling, we use equation (8)
-            // from Wilkie et al. (2014), L=lambda
-            // ws(X,L) = ps(X,L) / sum_(k of C)(pk(X,L))
-            // with ps(X,L) = pXs(X|L) * pLs(L)
-            // We can omit the factor pLs(L) if (and only if!)
-            // the wavelengths are sampled from a uniform distribution.
-            // So all pLs(L) terms in the fraction are equal and can
-            // be cancelled out because all wavelengths are sampled
-            // with same probability.
-            // The other term pXs(X|L) refers to the probability of
-            // sampling the whole path X up to this point with wavelength
-            // L which is simply the product of the BSDF PDFs for
-            // wavelength L (found in path_pdfs).
+            // for hero wavelength sampling, we use equation (8) from Wilkie et al. (2014), L=lambda
+            // ws(X,L) = ps(X,L) / sum_(k of C)(pk(X,L)) with ps(X,L) = pXs(X|L) * pLs(L).
+            // We can omit the factor pLs(L) if (and only if!) the wavelengths are sampled from a uniform distribution.
+            // So all pLs(L) terms in the fraction are equal and can be cancelled out because all wavelengths are sampled
+            // with the same probability.
+            // The other term pXs(X|L) refers to the probability of sampling the whole path X up to this point with wavelength
+            // L which is simply the product of the BSDF PDFs for wavelength L (found in path_pdfs).
             // So we divide each path_pdfs entry by the sum of path_pdfs.
             let weight = path_pdfs / path_pdfs.sum();
-            assert_eq!(weight.x(), 0.25);
-            assert_eq!(weight.y(), 0.25);
-            assert_eq!(weight.z(), 0.25);
-            assert_eq!(weight.w(), 0.25);
-            assert_eq!(weight.sum(), 1.0);
+            //assert_eq!(weight.x(), 0.25);
+            //assert_eq!(weight.y(), 0.25);
+            //assert_eq!(weight.z(), 0.25);
+            //assert_eq!(weight.w(), 0.25);
+            //assert_eq!(weight.sum(), 1.0);
             return weight;
         }
         #[cfg(not(feature = "hwss"))]
