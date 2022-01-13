@@ -28,6 +28,254 @@ pub struct Scene {
 }
 
 impl Scene {
+    pub fn dispersion() -> Self {
+        let mut scene = Self::default();
+        let upsample_table = UpsampleTable::load();
+
+        // define color spectra
+        let orange = upsample_table.get_spectrum([1.0, 0.4, 0.0]);
+        let blue = upsample_table.get_spectrum([0.0, 0.1, 1.0]);
+        let gray = upsample_table.get_spectrum([0.8, 0.8, 0.8]);
+        let black = upsample_table.get_spectrum([0.1, 0.1, 0.1]);
+        let constant = ConstantSpectrum::new(1.0);
+
+        // add floor
+        let floor_size = 100.0;
+        let floor_corner1 = Point3::new(-floor_size, -1.1, -floor_size);
+        let floor_corner2 = Point3::new(-floor_size, -1.1, floor_size);
+        let floor_corner3 = Point3::new(floor_size, -1.1, -floor_size);
+        let floor_corner4 = Point3::new(floor_size, -1.1, floor_size);
+
+        scene.add_material(
+            Triangle::new(floor_corner1, floor_corner3, floor_corner4),
+            LambertianBsdf::new(gray),
+        );
+        scene.add_material(
+            Triangle::new(floor_corner1, floor_corner4, floor_corner2),
+            LambertianBsdf::new(gray),
+        );
+
+        // add light ball
+        let light_pos = Point3::new(-1.5, -0.75, 2.0);
+        scene.add_emissive_material(
+            Sphere::new(light_pos, 0.1),
+            LambertianBsdf::new(gray),
+            ConstantSpectrum::new(100000.0),
+        );
+
+        // add walls with tiny opening
+        let verts_box_left = Scene::get_vertices_closed_box(
+            light_pos + Vec3::new(0.5, 0.0, -10.0),
+            Vec3::new(0.1, 1.0, 9.99),
+        );
+        let mut i = 0;
+        while i < verts_box_left.len() {
+            scene.add_material(
+                Triangle::new(
+                    verts_box_left[i],
+                    verts_box_left[i+1],
+                    verts_box_left[i+2]
+                ),
+                LambertianBsdf::new(gray),
+            );
+            i += 3;
+        }
+        let verts_box_right = Scene::get_vertices_closed_box(
+            light_pos + Vec3::new(0.5, 0.0, 10.0),
+            Vec3::new(0.1, 1.0, 9.99),
+        );
+        let mut i = 0;
+        while i < verts_box_right.len() {
+            scene.add_material(
+                Triangle::new(
+                    verts_box_right[i],
+                    verts_box_right[i+1],
+                    verts_box_right[i+2]
+                ),
+                LambertianBsdf::new(gray),
+            );
+            i += 3;
+        }
+
+        // add prism
+        let prism_corner1 = Point3::new(0.0, -1.0, 2.05);
+        let prism_corner2 = Point3::new(0.0, -0.5, 2.05);
+        let prism_corner3 = Point3::new(0.6, -1.0, 1.6);
+        let prism_corner4 = Point3::new(0.6, -0.5, 1.6);
+        let prism_corner5 = Point3::new(0.3, -1.0, 2.3);
+        let prism_corner6 = Point3::new(0.3, -0.5, 2.3);
+
+        let verts_prism: [Point3; 24] = [
+            // ceiling
+            prism_corner2, prism_corner4, prism_corner6,
+            // floor
+            prism_corner1, prism_corner5, prism_corner3,
+            // walls
+            prism_corner1, prism_corner3, prism_corner4,
+            prism_corner1, prism_corner4, prism_corner2,
+            prism_corner3, prism_corner5, prism_corner6,
+            prism_corner3, prism_corner6, prism_corner4,
+            prism_corner5, prism_corner1, prism_corner2,
+            prism_corner5, prism_corner2, prism_corner6,
+        ];
+        let mut i = 0;
+        while i < verts_prism.len() {
+            scene.add_material(
+                Triangle::new(
+                    verts_prism[i],
+                    verts_prism[i+1],
+                    verts_prism[i+2]
+                ),
+                //LambertianBsdf::new(gray),
+                FresnelBsdf::new(gray, gray, 1.55, 0.1)
+            );
+            i += 3;
+        }
+
+        // add glass box
+        /*let verts_box_left = Scene::get_vertices_closed_box(
+            Point3::new(0.0, -0.75, 2.0),
+            Vec3::new(0.25, 0.25, 0.25),
+        );
+        let mut i = 0;
+        while i < verts_box_left.len() {
+            scene.add_material(
+                Triangle::new(
+                    verts_box_left[i],
+                    verts_box_left[i+1],
+                    verts_box_left[i+2]
+                ),
+                //LambertianBsdf::new(gray),
+                FresnelBsdf::new(gray, gray, 1.55, 0.1)
+            );
+            i += 3;
+        }*/
+
+        // add glass sphere
+        /*scene.add_material(
+            Sphere::new(Point3::new(0.8, -0.75, 2.0), 0.25),
+            FresnelBsdf::new(gray, gray, 1.55, 0.1),
+        );*/
+
+        scene
+    }
+
+    pub fn boxed_light() -> Self {
+        let mut scene = Self::default();
+        let upsample_table = UpsampleTable::load();
+
+        // define color spectra
+        let orange = upsample_table.get_spectrum([1.0, 0.4, 0.0]);
+        let blue = upsample_table.get_spectrum([0.0, 0.1, 1.0]);
+        let gray = upsample_table.get_spectrum([0.8, 0.8, 0.8]);
+        let black = upsample_table.get_spectrum([0.1, 0.1, 0.1]);
+        let constant = ConstantSpectrum::new(1.0);
+        let mut green_light = upsample_table.get_spectrum([0.0, 204.0 / 255.0, 102.0 / 255.0]);
+        green_light.set_scale(150.0);
+
+        // build a cornell box
+        let vertices = Scene::get_vertices_cornell_box();
+
+        // add triangles
+        let mut i = 0;
+        while i < vertices.len() {
+            scene.add_material(
+                Triangle::new(
+                    vertices[i],
+                    vertices[i+1],
+                    vertices[i+2]
+                ),
+                LambertianBsdf::new(gray),
+            );
+            i += 3;
+        }
+
+        // build a smaller box around the light
+        let box_size = 0.15;
+        let box_factor = 1.5;
+        let box_center = Point3::new(0.0, 0.5, 1.0);
+        let bfl = box_center + Vec3::new(-box_size, -box_size, -box_size);
+        let bfr = box_center + Vec3::new(box_size, -box_size, -box_size);
+        let bbl = box_center + Vec3::new(-box_size, -box_size, box_size);
+        let bbr = box_center + Vec3::new(box_size, -box_size, box_size);
+        let tfl = box_center + Vec3::new(-box_size * box_factor, box_size, -box_size * box_factor);
+        let tfr = box_center + Vec3::new(box_size * box_factor, box_size, -box_size * box_factor);
+        let tbl = box_center + Vec3::new(-box_size * box_factor, box_size, box_size * box_factor);
+        let tbr = box_center + Vec3::new(box_size * box_factor, box_size, box_size * box_factor);
+
+        let box_vertices: [Point3; 30] = [
+            // floor
+            bfl,
+            bbl,
+            bbr,
+            bfl,
+            bbr,
+            bfr,
+            // front
+            bfl,
+            bfr,
+            tfr,
+            bfl,
+            tfr,
+            tfl,
+            // back
+            bbr,
+            bbl,
+            tbr,
+            bbl,
+            tbl,
+            tbr,
+            // left
+            bbl,
+            bfl,
+            tfl,
+            bbl,
+            tfl,
+            tbl,
+            // right
+            bfr,
+            bbr,
+            tfr,
+            bbr,
+            tbr,
+            tfr,
+        ];
+
+        // add triangles
+        let mut j = 0;
+        while j < box_vertices.len() {
+            scene.add_material(
+                Triangle::new(
+                    box_vertices[j],
+                    box_vertices[j+1],
+                    box_vertices[j+2]
+                ),
+                LambertianBsdf::new(gray),
+            );
+            j += 3;
+        }
+
+        // add the light
+        scene.add_emissive_material(
+            Sphere::new(box_center, 0.1),
+            LambertianBsdf::new(gray),
+            ConstantSpectrum::new(150.0),
+            //green_light
+        );
+
+        // add additional spheres
+        scene.add_material(
+            Sphere::new(Point3::new(-0.3, -0.85, 1.5), 0.3),
+            LambertianBsdf::new(orange),
+        );
+        scene.add_material(
+            Sphere::new(Point3::new(0.5, -0.3, 1.2), 0.2),
+            LambertianBsdf::new(blue),
+        );
+
+        scene
+    }
+
     pub fn glass_on_field() -> Self {
         let mut scene = Self::default();
         let upsample_table = UpsampleTable::load();
@@ -91,45 +339,8 @@ impl Scene {
         let black = upsample_table.get_spectrum([0.1, 0.1, 0.1]);
         let constant = ConstantSpectrum::new(1.0);
 
-        // build the box
-        // declare triangle vertices
-        let vertices: [Point3; 30] = [
-            // left wall
-            Point3::new(-1.0, -1.0, 2.0),
-            Point3::new(-1.0, 1.0, 2.0),
-            Point3::new(-1.0, -1.0, 0.0),
-            Point3::new(-1.0, -1.0, 0.0),
-            Point3::new(-1.0, 1.0, 2.0),
-            Point3::new(-1.0, 1.0, 0.0),
-            // right wall
-            Point3::new(1.0, -1.0, 2.0),
-            Point3::new(1.0, -1.0, 0.0),
-            Point3::new(1.0, 1.0, 0.0),
-            Point3::new(1.0, 1.0, 0.0),
-            Point3::new(1.0, 1.0, 2.0),
-            Point3::new(1.0, -1.0, 2.0),
-            // back wall
-            Point3::new(-1.0, 1.0, 2.0),
-            Point3::new(-1.0, -1.0, 2.0),
-            Point3::new(1.0, 1.0, 2.0),
-            Point3::new(1.0, 1.0, 2.0),
-            Point3::new(-1.0, -1.0, 2.0),
-            Point3::new(1.0, -1.0, 2.0),
-            // floor
-            Point3::new(-1.0, -1.0, 0.0),
-            Point3::new(1.0, -1.0, 0.0),
-            Point3::new(-1.0, -1.0, 2.0),
-            Point3::new(-1.0, -1.0, 2.0),
-            Point3::new(1.0, -1.0, 0.0),
-            Point3::new(1.0, -1.0, 2.0),
-            // ceiling
-            Point3::new(-1.0, 1.0, 2.0),
-            Point3::new(1.0, 1.0, 2.0),
-            Point3::new(-1.0, 1.0, 0.0),
-            Point3::new(-1.0, 1.0, 0.0),
-            Point3::new(1.0, 1.0, 2.0),
-            Point3::new(1.0, 1.0, 0.0)
-        ];
+        // build a cornell box
+        let vertices = Scene::get_vertices_cornell_box();
 
         // add triangles
         let mut i = 0;
@@ -452,6 +663,104 @@ impl Scene {
         ));
     }
 
+    fn get_vertices_cornell_box() -> [Point3; 30] {
+        // declare triangle vertices
+        return [
+            // left wall
+            Point3::new(-1.0, -1.0, 2.0),
+            Point3::new(-1.0, 1.0, 2.0),
+            Point3::new(-1.0, -1.0, 0.0),
+            Point3::new(-1.0, -1.0, 0.0),
+            Point3::new(-1.0, 1.0, 2.0),
+            Point3::new(-1.0, 1.0, 0.0),
+            // right wall
+            Point3::new(1.0, -1.0, 2.0),
+            Point3::new(1.0, -1.0, 0.0),
+            Point3::new(1.0, 1.0, 0.0),
+            Point3::new(1.0, 1.0, 0.0),
+            Point3::new(1.0, 1.0, 2.0),
+            Point3::new(1.0, -1.0, 2.0),
+            // back wall
+            Point3::new(-1.0, 1.0, 2.0),
+            Point3::new(-1.0, -1.0, 2.0),
+            Point3::new(1.0, 1.0, 2.0),
+            Point3::new(1.0, 1.0, 2.0),
+            Point3::new(-1.0, -1.0, 2.0),
+            Point3::new(1.0, -1.0, 2.0),
+            // floor
+            Point3::new(-1.0, -1.0, 0.0),
+            Point3::new(1.0, -1.0, 0.0),
+            Point3::new(-1.0, -1.0, 2.0),
+            Point3::new(-1.0, -1.0, 2.0),
+            Point3::new(1.0, -1.0, 0.0),
+            Point3::new(1.0, -1.0, 2.0),
+            // ceiling
+            Point3::new(-1.0, 1.0, 2.0),
+            Point3::new(1.0, 1.0, 2.0),
+            Point3::new(-1.0, 1.0, 0.0),
+            Point3::new(-1.0, 1.0, 0.0),
+            Point3::new(1.0, 1.0, 2.0),
+            Point3::new(1.0, 1.0, 0.0)
+        ];
+    }
+
+    fn get_vertices_closed_box(box_center: Point3, box_size: Vec3) -> [Point3; 36] {
+        // build a smaller box around the light
+        let bfl = box_center + Vec3::new(-box_size.x(), -box_size.y(), -box_size.z());
+        let bfr = box_center + Vec3::new(box_size.x(), -box_size.y(), -box_size.z());
+        let bbl = box_center + Vec3::new(-box_size.x(), -box_size.y(), box_size.z());
+        let bbr = box_center + Vec3::new(box_size.x(), -box_size.y(), box_size.z());
+        let tfl = box_center + Vec3::new(-box_size.x(), box_size.y(), -box_size.z());
+        let tfr = box_center + Vec3::new(box_size.x(), box_size.y(), -box_size.z());
+        let tbl = box_center + Vec3::new(-box_size.x(), box_size.y(), box_size.z());
+        let tbr = box_center + Vec3::new(box_size.x(), box_size.y(), box_size.z());
+
+        return [
+            // floor
+            bfl,
+            bbl,
+            bbr,
+            bfl,
+            bbr,
+            bfr,
+            // ceiling
+            tfl,
+            tbr,
+            tbl,
+            tfl,
+            tfr,
+            tbr,
+            // front
+            bfl,
+            bfr,
+            tfr,
+            bfl,
+            tfr,
+            tfl,
+            // back
+            bbr,
+            bbl,
+            tbr,
+            bbl,
+            tbl,
+            tbr,
+            // left
+            bbl,
+            bfl,
+            tfl,
+            bbl,
+            tfl,
+            tbl,
+            // right
+            bfr,
+            bbr,
+            tfr,
+            bbr,
+            tbr,
+            tfr,
+        ];
+    }
+
     pub fn background_emission(&self, ray: &Ray, _wavelength: Wavelength) -> SpectralSample {
         SpectralSample::splat(0.0)
     }
@@ -513,282 +822,4 @@ impl Scene {
         let light = &self.lights[light_idx];
         (&light.data, &self.primitives[light.prim_index], self.lights.len() as f32)
     }
-
-    //pub fn radiance(
-        //&self,
-        //mut ray: Ray,
-        //wavelength: Wavelength,
-        //sampler: &mut Sampler,
-    //) -> SpectralSample {
-        //let mut throughput = SpectralSample::splat(1.0);
-        //let mut path_pdfs = PdfSet::splat(1.0);
-        //let mut radiance = SpectralSample::splat(0.0);
-        //let mut specular_bounce = false;
-
-        //let mut int = self.intersection(&ray);
-
-        //for bounces in 0..MAX_DEPTH {
-            //let (prim, hit) = if let Some(ph) = int {
-                //ph
-            //} else {
-                //// Hit nothing
-                ////let mis_weight = mis::balance_heuristic_1(path_pdfs);
-                ////radiance += throughput * mis_weight * self.background_emission(&ray, wavelength);
-                //break; 
-            //};
-
-            //if bounces == 0 || specular_bounce {
-                //if let Some(light) = prim.get_light(&self.lights) {
-                    //let mis_weight = mis::balance_heuristic_1(path_pdfs);
-                    //radiance += throughput * mis_weight * light.evaluate(wavelength);
-                //}
-            //}
-
-            //let bsdf = match prim.get_material(&self.materials) {
-                //Some(bsdf) => bsdf,
-                //None => break,
-            //};
-
-            //let shading_wo = hit.world_to_shading(-ray.d());
-
-            //// Next event estimation
-            //if !bsdf.is_specular() {
-                //let light_idx = sampler.gen_array_index(self.lights.len());
-                //let light = &self.lights[light_idx];
-                //let light_prim = &self.primitives[light.prim_index];
-
-                //let (light_pos, light_pdf) = light_prim.sample(&hit, sampler);
-                //let light_emission = light.data.evaluate(wavelength);
-
-                //let light_pick_weight = self.lights.len() as f32;
-                //let ray_to_light = Ray::spawn_to(hit.point, light_pos, hit.normal);
-
-                //if light_pdf > 0.0
-                    //&& !light_emission.is_zero()
-                    //// TODO: Use t_max instead of checking whether it hit the same light
-                    //&& self
-                        //.intersection(&ray_to_light)
-                        //.map(|(prim, light_hit)| std::ptr::eq(prim, light_prim))
-                        //.unwrap_or(false)
-                //{
-                    //let shading_wi = hit.world_to_shading(ray_to_light.d());
-
-                    //let bsdf_values = bsdf.evaluate(shading_wi, shading_wo, wavelength);
-                    //let bsdf_pdfs = bsdf.pdf(shading_wi, shading_wo, wavelength);
-                    //let cos_theta = shading_wi.cos_theta().abs();
-                    ////let mis_weight = mis::balance_heuristic_2(
-                        ////path_pdfs * PdfSet::splat(light_pdf),
-                        ////path_pdfs * bsdf_pdfs,
-                    ////);
-                    //let mis_weight = mis::balance_heuristic_1(path_pdfs * PdfSet::splat(light_pdf));
-
-                    //radiance += throughput
-                        //* light_emission
-                        //* bsdf_values
-                        //* mis_weight
-                        //* cos_theta
-                        //* light_pick_weight
-                          // / light_pdf;
-                //}
-            //}
-
-            //// Sample BSDF
-            //let (bsdf_sampled_wi, bsdf_values, bsdf_pdfs) =
-                //bsdf.sample(shading_wo, wavelength, sampler);
-            //let cos_theta = bsdf_sampled_wi.cos_theta().abs();
-            //if bsdf_pdfs.hero() == 0.0 || cos_theta == 0.0 {
-                //break;
-            //}
-
-            //let world_wi = hit.shading_to_world(bsdf_sampled_wi);
-            //ray = Ray::spawn(hit.point, world_wi, hit.normal);
-
-            //throughput *= bsdf_values * cos_theta / bsdf_pdfs.hero();
-
-            //// Russian roulette
-            //if bounces >= MIN_DEPTH {
-                //let p = throughput.sum().min(0.95);
-                //if sampler.gen_0_1() > p {
-                    //break;
-                //}
-
-                //throughput /= SpectralSample::splat(p);
-            //}
-
-            //int = self.intersection(&ray);
-            ////if !bsdf.is_specular() {
-            //if false {
-                //if let Some((next_prim, next_hit)) = &int {
-                    //if let Some(light) = next_prim.get_light(&self.lights) {
-                        //let light_emission = light.evaluate(wavelength);
-                        //let light_pdf =
-                            //prim.pdf(&hit, next_hit.point - hit.point) / self.lights.len() as f32;
-                        //let mis_weight = mis::balance_heuristic_2(
-                            //path_pdfs * bsdf_pdfs,
-                            //path_pdfs * PdfSet::splat(light_pdf),
-                        //);
-
-                        //radiance += throughput * mis_weight * light_emission;
-                    //}
-                //} else {
-                    //// Sample background
-                    //break;
-                //}
-            //}
-
-            //path_pdfs *= bsdf_pdfs;
-            //specular_bounce = bsdf.is_specular();
-        //}
-
-        //radiance
-    //}
-
-    //pub fn radiance(
-        //&self,
-        //mut ray: Ray,
-        //wavelength: Wavelength,
-        //sampler: &mut Sampler,
-    //) -> SpectralSample {
-        //let mut throughput = SpectralSample::splat(1.0);
-        //let mut path_pdfs = PdfSet::splat(1.0);
-        //let mut radiance = SpectralSample::splat(0.0);
-        //let mut specular_bounce = false;
-
-        //for bounces in 0..MAX_DEPTH {
-            //if let Some((primitive, hit)) = self.intersection(&ray) {
-                //if bounces == 0 || specular_bounce {
-                    //if let Some(light) = primitive.get_light(&self.lights) {
-                        //radiance += mis::balance_heuristic_1(path_pdfs) * throughput * light.evaluate(wavelength);
-                    //}
-                //}
-
-                //if let Some(bsdf) = primitive.get_material(&self.materials) {
-                    //let shading_wo = hit.world_to_shading(-ray.d());
-
-                    //radiance += throughput * self.direct_lighting(bsdf, shading_wo, &hit, &ray, path_pdfs, wavelength, sampler);
-
-                    //// Indirect lighting
-                    //let (bsdf_sampled_wi, bsdf_values, bsdf_pdfs) =
-                        //bsdf.sample(shading_wo, wavelength, sampler);
-                    //if bsdf_pdfs.hero() == 0.0 {
-                        //break;
-                    //}
-
-                    //let cos_theta = bsdf_sampled_wi.cos_theta().abs();
-                    //throughput *= bsdf_values * cos_theta / bsdf_pdfs.hero();
-
-                    //ray = Ray::spawn(hit.point, hit.shading_to_world(bsdf_sampled_wi), hit.normal);
-                    //specular_bounce = bsdf.is_specular();
-                    //path_pdfs *= bsdf_pdfs;
-
-                    //// Russian roulette
-                    //if bounces >= MIN_DEPTH {
-                        //let p = throughput.sum().min(0.95);
-                        //if sampler.gen_0_1() > p {
-                            //break;
-                        //}
-
-                        //throughput /= SpectralSample::splat(p);
-                    //}
-                //}
-            //} else {
-                //radiance += mis::balance_heuristic_1(path_pdfs) * throughput * self.background_emission(&ray, wavelength);
-                //break;
-            //}
-        //}
-
-        //radiance
-    //}
-
-    //pub fn direct_lighting(
-        //&self,
-        //bsdf: &Bsdf,
-        //shading_wo: Vec3<Shading>,
-        //hit: &Intersection,
-        //ray: &Ray,
-        //path_pdfs: PdfSet,
-        //wavelength: Wavelength,
-        //sampler: &mut Sampler,
-    //) -> SpectralSample {
-        //if bsdf.is_specular() {
-            //return SpectralSample::splat(0.0);
-        //}
-
-        //let light_idx = sampler.gen_array_index(self.lights.len());
-        //let light_weight = self.lights.len() as f32;
-
-        //self.sample_light(
-            //bsdf,
-            //shading_wo,
-            //hit,
-            //light_idx,
-            //light_weight,
-            //ray,
-            //path_pdfs,
-            //wavelength,
-            //sampler,
-        //)
-    //}
-
-    //pub fn sample_light(
-        //&self,
-        //bsdf: &Bsdf,
-        //shading_wo: Vec3<Shading>,
-        //hit: &Intersection,
-        //light_idx: usize,
-        //light_weight: f32,
-        //ray: &Ray,
-        //path_pdfs: PdfSet,
-        //wavelength: Wavelength,
-        //sampler: &mut Sampler,
-    //) -> SpectralSample {
-        //let mut radiance = SpectralSample::splat(0.0);
-
-        //let light = &self.lights[light_idx];
-        //let light_prim = &self.primitives[light.prim_index];
-        //let (light_pos, light_pdf) = light_prim.sample(&hit, sampler);
-        //let light_emission = light.data.evaluate(wavelength);
-
-        //let ray_to_light = Ray::spawn_to(hit.point, light_pos, hit.normal);
-
-        //if light_pdf > 0.0
-            //&& light_emission.sum() > 0.0 // TODO: !light_emission.is_zero()
-            //&& self
-                //.intersection(&ray_to_light)
-                //.map(|(prim, light_hit)| std::ptr::eq(prim, light_prim))
-                //.unwrap_or(false)
-        //{
-            //let shading_wi = hit.world_to_shading(ray_to_light.d());
-            //let bsdf_values = bsdf.evaluate(shading_wi, shading_wo, wavelength);
-            //let bsdf_pdfs = bsdf.pdf(shading_wi, shading_wo, wavelength);
-            //let cos_theta = shading_wi.cos_theta().abs();
-
-            //let mis_weight = mis::balance_heuristic_2(path_pdfs * PdfSet::splat(light_pdf), path_pdfs * bsdf_pdfs);
-
-            //radiance += light_emission * bsdf_values * mis_weight * cos_theta / light_pdf;
-
-            //let (bsdf_sampled_wi, bsdf_values, bsdf_pdfs) = bsdf.sample(shading_wo, wavelength, sampler);
-            //let world_wi = hit.shading_to_world(bsdf_sampled_wi);
-            //let ray_to_light = Ray::spawn(hit.point, world_wi, hit.normal);
-            //let light_emission = light.data.evaluate(wavelength);
-
-            //if bsdf_pdfs.hero() > 0.0
-                //&& light_emission.sum() > 0.0 // TODO: !light_emission.is_zero()
-                //&& self
-                    //.intersection(&ray_to_light)
-                    //.map(|(prim, light_hit)| std::ptr::eq(prim, light_prim))
-                    //.unwrap_or(false)
-            //{
-                //let light_pdf = light_prim.pdf(hit, world_wi);
-                //let cos_theta = bsdf_sampled_wi.cos_theta().abs();
-                //let mis_weight = mis::balance_heuristic_2(path_pdfs * bsdf_pdfs, path_pdfs * PdfSet::splat(light_pdf));
-
-                //radiance += light_emission * bsdf_values * mis_weight * cos_theta / bsdf_pdfs.hero();
-            //}
-
-            //radiance * light_weight
-        //} else {
-            //SpectralSample::splat(0.0)
-        //}
-    //}
 }

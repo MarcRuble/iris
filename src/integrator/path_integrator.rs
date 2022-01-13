@@ -13,7 +13,7 @@ use crate::{
     types::PrimIndex,
 };
 
-const MAX_DEPTH: u32 = 15;
+const MAX_DEPTH: u32 = 32;
 
 pub struct PathIntegrator;
 

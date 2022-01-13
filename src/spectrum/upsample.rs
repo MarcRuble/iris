@@ -11,6 +11,7 @@ pub struct UpsampleTable {
 #[derive(Debug, Copy, Clone)]
 pub struct UpsampledSpectrum {
     coefficients: [f32; 3],
+    scale: f32,
 }
 
 impl SampleableSpectrum for UpsampledSpectrum {
@@ -20,13 +21,17 @@ impl SampleableSpectrum for UpsampledSpectrum {
             .mul_add(lambda, self.coefficients[1])
             .mul_add(lambda, self.coefficients[2]);
         let y = 1.0 / x.mul_add(x, 1.0).sqrt();
-        (0.5 * x).mul_add(y, 0.5)
+        (0.5 * x).mul_add(y, 0.5) * self.scale
     }
 }
 
 impl UpsampledSpectrum {
     pub fn get_coefficients(&self) -> [f32; 3] {
         return self.coefficients;
+    }
+
+    pub fn set_scale(&mut self, scale: f32) {
+        self.scale = scale;
     }
 }
 
@@ -108,7 +113,9 @@ impl UpsampleTable {
             offset += 1;
         }
 
-        UpsampledSpectrum { coefficients }
+        let scale = 1.0;
+
+        UpsampledSpectrum { coefficients, scale }
     }
 
     pub fn load() -> Self {

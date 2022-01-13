@@ -1,43 +1,15 @@
 # Iris
 
-CPU path tracer written in Rust.
+This is a modified version of [`64/iris`](https://github.com/64/iris), targeted to be used for research purposes in a university project. The goal is to verify the effect of hero wavelength spectral sampling (HWSS) as presented by Wilkie et al. (2014) in comparison to single wavelength spectral sampling (SWSS).
 
-Licensed under the GPLv3.
+Changes to the original include:
 
-Features (WIP):
-* Spectral rendering (including wavelength-dependent path generation) with [Hero Wavelength Spectral Sampling](https://cgg.mff.cuni.cz/~wilkie/Website/EGSR_14_files/WNDWH14HWSS.pdf)
-* Spectral upsampling ([Jakob et al.](http://rgl.epfl.ch/publications/Jakob2019Spectral))
-* Parallel and progressive refinement
-* Multiple importance sampling
-* Russian roulette
-* Next event estimation
-* HDR environment maps
+* `Cargo.toml` now includes a new features `hwss` (to activate hero wavelength sampling, else single wavelength is used). `openexr` has been removed from dependencies and the `progressive` feature is no longer available.
 
-TODO:
-* Add README image
-* Clean up tile
-* SIMD more things (matmul, vec3, Spectrum eval, upsampling)
-* Analytic light integration test (Le = 0.5, f = 0.5, radiance should be 1)
-* More shapes
-* Serialize scene from RON
-* BVH / other spatial accel
-* MTL file handling
-* Reconstruction filtering
-* Adaptive sampling (?)
-* Direct image output
-* Tonemapping options (ACES)
-* Camera lens sim + vigenetting + DoF
-* Volume rendering
-* Motion blur / animation
-* Real time rasterizing preview 
-* Own PNG / HDR code
-* PGO
-* Clean up normal offseting
-* MIS compensation
-* Triangles
-* Coherent ray bundles
-* SDF shapes
-* Mipmapping / texture filtering
-* Catmull-Clark
-* Denoising
-* License
+* Command line arguments have been added in format `<samples per pixel> <file name>`. When no sample number is given, 4 is used as default. When no file name is given, the render will open in progressive mode. Otherwise it will be saved to PNG.
+
+* Saving as PNG file is now default if a file name is given via command line.
+
+* Progressive rendering is now default if no file name is given via command line.
+
+* `PathIntegrator` is a new integrator implementing the most basic forward path tracing without next-event estimation. It is based on the original's `SwssNaive` and `HwssNaive` integrators as well as the [documentation of PBRT to implement a path tracer](https://pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Path_Tracing).

@@ -72,7 +72,7 @@ fn main() {
         height: HEIGHT,
         spp: total_spp,
         integrator: CurrentIntegrator::default(),
-        scene: scene::Scene::cornell_box(),
+        scene: scene::Scene::dispersion(),
         buffer: RwLock::new(vec![(0.0, 0.0, 0.0); WIDTH * HEIGHT]),
         camera: Camera::new(
             math::Point3::new(0.0, 0.0, 0.0),

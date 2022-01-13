@@ -196,6 +196,17 @@ impl std::ops::Div<f32> for SpectralSample {
     }
 }
 
+impl std::ops::Div<PdfSet> for SpectralSample {
+    type Output = Self;
+
+    fn div(self, other: PdfSet) -> Self {
+        Self {
+            inner: self.inner / other.inner,
+        }
+        .assert_invariants()
+    }
+}
+
 impl std::ops::DivAssign<SpectralSample> for SpectralSample {
     fn div_assign(&mut self, other: SpectralSample) {
         self.inner /= other.inner;
