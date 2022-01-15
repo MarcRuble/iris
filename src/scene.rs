@@ -283,6 +283,7 @@ impl Scene {
         // define color spectra
         let orange = upsample_table.get_spectrum([1.0, 0.4, 0.0]);
         let blue = upsample_table.get_spectrum([0.0, 0.1, 1.0]);
+        let green = upsample_table.get_spectrum([0.0, 0.6, 0.0]);
         let gray = upsample_table.get_spectrum([0.8, 0.8, 0.8]);
         let black = upsample_table.get_spectrum([0.1, 0.1, 0.1]);
         let constant = ConstantSpectrum::new(1.0);
@@ -292,38 +293,45 @@ impl Scene {
             Sphere::new(Point3::new(0.0, -101.0, 1.0), 100.0),
             LambertianBsdf::new(gray),
         );
+        // add ceiling
+        scene.add_material(
+            Sphere::new(Point3::new(0.0, 105.0, 1.0), 100.0),
+            LambertianBsdf::new(green),
+        );
+
+        let offset = Vec3::new(-1.0, 0.0, -1.0);
 
         // add emissive spheres
         scene.add_emissive_material(
-            Sphere::new(Point3::new(-0.5, 1.0, 2.0), 0.25),
+            Sphere::new(Point3::new(-0.5, 1.0, 4.0) + offset, 0.4),
             LambertianBsdf::new(gray),
-            ConstantSpectrum::new(50.0),
+            ConstantSpectrum::new(80.0),
         );
         scene.add_emissive_material(
-            Sphere::new(Point3::new(5.0, 0.0, 7.0), 1.0),
+            Sphere::new(Point3::new(5.0, 0.0, 7.0) + offset, 1.0),
             LambertianBsdf::new(gray),
-            ConstantSpectrum::new(50.0),
+            ConstantSpectrum::new(30.0),
         );
 
         // add glass spheres
         scene.add_material(
-            Sphere::new(Point3::new(0.5, 0.0, 3.0), 0.5),
-            FresnelBsdf::new(gray, gray, 1.55, 0.1),
+            Sphere::new(Point3::new(1.1, 0.0, 3.3) + offset, 0.5),
+            FresnelBsdf::new(gray, gray, 1.55, 0.8),
         );
         scene.add_material(
-            Sphere::new(Point3::new(-0.5, -0.5, 3.5), 0.25),
+            Sphere::new(Point3::new(-0.5, -0.5, 3.5) + offset, 0.25),
             FresnelBsdf::new(gray, blue, 1.55, 0.1),
         );
         scene.add_material(
-            Sphere::new(Point3::new(3.5, 0.0, 6.0), 0.5),
-            FresnelBsdf::new(orange, gray, 1.55, 0.1),
+            Sphere::new(Point3::new(3.5, 0.0, 6.0) + offset, 0.5),
+            FresnelBsdf::new(orange, gray, 1.45, 0.1),
         );
 
         // add specular spheres
-        /*scene.add_material(
-            Sphere::new(Point3::new(0.0, 0.0, 5.0), 0.5),
+        scene.add_material(
+            Sphere::new(Point3::new(0.0, 0.0, 5.0) + offset, 0.5),
             SpecularBsdf::new(gray),
-        );*/
+        );
 
         scene
     }
